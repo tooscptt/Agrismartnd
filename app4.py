@@ -6,7 +6,7 @@ from gtts import gTTS
 import tempfile
 import os
 
-# --- 1. KONFIGURASI HALAMAN & CSS MODERN ---
+# --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(
     page_title="AgriSmart Pro",
     page_icon="🌾",
@@ -14,86 +14,43 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# URL Gambar Bernuansa Tani (Bisa diganti link lain)
-LOGIN_BG_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1932&auto=format&fit=crop"
-BANNER_URL = "https://images.unsplash.com/photo-1625246333195-584d94797c91?q=80&w=2071&auto=format&fit=crop"
-
-st.markdown(f"""
+# --- 2. CSS SEDERHANA (HANYA WARNA & FONT) ---
+# Kita hapus CSS yang bikin tombol macet. Cukup ganti warna background saja.
+st.markdown("""
 <style>
-    /* Latar Belakang Halaman Utama (Dashboard) */
-    .stApp {{
-        background-color: #f8f9fa;
-    }}
+    /* Background Warna Krem Lembut (Khas Alam) */
+    .stApp {
+        background-color: #fdfcf0;
+    }
     
-    /* CSS Khusus Halaman Login (Background Gambar Full) */
-    [data-testid="stHeader"] {{background: transparent;}}
-    .login-bg {{
-        background-image: url("{LOGIN_BG_URL}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        z-index: -1;
-        filter: brightness(0.7); /* Gelapkan dikit biar tulisan terbaca */
-    }}
-    
-    /* Style Kartu Login yang Minimalis Transparan */
-    .login-card {{
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 40px;
-        border-radius: 25px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        text-align: center;
-    }}
-
-    /* Style Container/Kartu di Dashboard */
-    .dashboard-card {{
-        background-color: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
-        border: 1px solid #eef0f2;
-    }}
-    
-    /* Menghias Chat Bubble */
-    .stChatMessage {{
-        background-color: white;
+    /* Tombol Utama Hijau */
+    .stButton>button {
+        width: 100%;
         border-radius: 12px;
-        border: 1px solid #e0e0e0;
-    }}
+        font-weight: bold;
+        border: 1px solid #2e7d32;
+    }
     
-    /* Judul Halaman yang Modern */
-    .page-title {{
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #2e7d32; /* Hijau Tani */
-        margin-bottom: 10px;
-    }}
+    /* Mempercantik Judul */
+    h1, h2, h3 {
+        color: #1b5e20;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. HANDLER API KEY & SETTINGS ---
-# Inisialisasi state untuk pengaturan suara
-if 'enable_tts' not in st.session_state:
-    st.session_state['enable_tts'] = True
+# --- 3. SETUP API KEY & SUARA ---
+if 'enable_tts' not in st.session_state: st.session_state['enable_tts'] = True
 
 try:
     if "API_KEY" in st.secrets:
         api_key = st.secrets["API_KEY"]
     else:
-        api_key = "MASUKKAN_KEY_LOKAL_DISINI"
-        
-    if not api_key or "MASUKKAN" in api_key: pass
-    else: genai.configure(api_key=api_key)
+        api_key = "MASUKKAN_KEY_LOKAL" 
+    if api_key and "MASUKKAN" not in api_key: genai.configure(api_key=api_key)
 except: pass
 
-# --- 3. FUNGSI TEXT-TO-SPEECH ---
 def text_to_speech(text):
-    # Cek dulu apakah fitur suara diaktifkan di pengaturan
-    if not st.session_state['enable_tts']:
-        return None
+    if not st.session_state['enable_tts']: return None
     try:
         tts = gTTS(text=text, lang='id', slow=False)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
@@ -101,206 +58,150 @@ def text_to_speech(text):
             return fp.name
     except: return None
 
-# --- 4. HALAMAN LOGIN (DENGAN BACKGROUND TANI) ---
+# --- 4. HALAMAN LOGIN (KARTU TENGAH) ---
 def login_page():
-    # Suntikkan div background
-    st.markdown('<div class="login-bg"></div>', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1.5, 2, 1.5])
+    col1, col2, col3 = st.columns([1, 2, 1]) # Biar posisinya di tengah
     with col2:
-        # Gunakan container untuk efek kartu
-        with st.container():
-            st.markdown('<div class="login-card">', unsafe_allow_html=True)
-            st.image("https://cdn-icons-png.flaticon.com/512/2917/2917995.png", width=100)
-            st.markdown("<h2 style='color: #2e7d32;'>Selamat Datang Petani</h2>", unsafe_allow_html=True)
-            st.write("Masuk untuk memulai konsultasi cerdas.")
+        # Gunakan 'border=True' pengganti CSS Card yang error kemarin
+        with st.container(border=True):
+            st.markdown("<h1 style='text-align: center;'>🌾 AgriSmart</h1>", unsafe_allow_html=True)
+            st.write("Sistem Pakar Pertanian Berbasis AI")
             
-            with st.form("login_form"):
-                username = st.text_input("Username", placeholder="Contoh: admin")
-                password = st.text_input("Password", type="password", placeholder="Contoh: petani123")
-                st.write("")
-                submitted = st.form_submit_button("🚀 Masuk Aplikasi", use_container_width=True, type="primary")
+            # Gambar Banner Login (Menggunakan link stabil Wikimedia)
+            st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Padi_sawah.jpg/640px-Padi_sawah.jpg", caption="Mitra Petani Indonesia")
+            
+            with st.form("login"):
+                user = st.text_input("Username", placeholder="admin")
+                pwd = st.text_input("Password", type="password", placeholder="petani123")
                 
-                if submitted:
-                    if username == "admin" and password == "petani123":
+                if st.form_submit_button("Masuk Sekarang", type="primary"):
+                    if user == "admin" and pwd == "petani123":
                         st.session_state['is_logged_in'] = True
                         st.rerun()
                     else:
-                        st.error("Akun tidak ditemukan.")
-            st.markdown('</div>', unsafe_allow_html=True)
+                        st.error("Gagal masuk. Cek username/password.")
 
-# --- 5. DASHBOARD UTAMA (ISI APLIKASI) ---
+# --- 5. DASHBOARD UTAMA ---
 def dashboard_page():
-    # --- SIDEBAR NAVIGASI ---
+    # Sidebar
     with st.sidebar:
-        st.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=70)
-        st.markdown("### AgriSmart Pro")
-        
-        selected_menu = option_menu(
-            menu_title=None, # Judul disembunyikan biar minimalis
-            options=["Beranda", "Konsultasi AI", "Ensiklopedia Tani", "Pengaturan", "Logout"],
-            icons=["house-door-fill", "robot", "book-half", "gear-fill", "box-arrow-left"],
+        st.header("Menu Utama")
+        selected = option_menu(
+            menu_title=None,
+            options=["Beranda", "Konsultasi", "Ensiklopedia", "Logout"],
+            icons=["house", "robot", "book", "box-arrow-right"],
             default_index=0,
-            styles={
-                "container": {"padding": "0!important", "background-color": "#f8f9fa"},
-                "nav-link": {"font-size": "14px", "text-align": "left", "margin":"5px"},
-                "nav-link-selected": {"background-color": "#2e7d32", "font-weight":"bold"},
-            }
+            styles={"nav-link-selected": {"background-color": "#2e7d32"}}
         )
 
-    # --- ROUTING HALAMAN ---
-    
-    # ================= HALAMAN 1: BERANDA (DASHBOARD) =================
-    if selected_menu == "Beranda":
-        # Banner Selamat Datang
-        st.image(BANNER_URL, use_column_width=True)
-        st.markdown('<div class="page-title">Halo, Sobat Tani! 👋</div>', unsafe_allow_html=True)
-        st.write("Selamat datang di dashboard AgriSmart. Apa yang ingin Anda lakukan hari ini?")
+    # --- KONTEN BERANDA ---
+    if selected == "Beranda":
+        st.title("Halo, Sobat Tani! 👋")
+        
+        # Gambar Banner Utama (Link stabil)
+        # Jika gambar ini gagal load di HP, dia tidak akan bikin error
+        try:
+            st.image("https://upload.wikimedia.org/wikipedia/commons/9/98/Rice_fields_in_Bali.jpg", use_container_width=True)
+        except:
+            st.warning("Gambar tidak muncul karena sinyal, tapi aplikasi tetap aman!")
+
         st.divider()
 
-        # Kartu Menu Cepat (Quick Actions)
-        col1, col2, col3 = st.columns(3)
+        # MENU CEPAT (Pakai Kolom & Container Asli Streamlit - PASTI BISA DIKLIK)
+        col1, col2 = st.columns(2)
+        
         with col1:
-            st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-            st.markdown("### 🤖 Konsultasi Cepat")
-            st.write("Tanya jawab langsung dengan AI mengenai masalah tanaman.")
-            st.button("Mulai Konsultasi", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True): # Ini kotak bergaris
+                st.subheader("🤖 Tanya Dokter AI")
+                st.write("Punya tanaman sakit? Foto dan tanya solusinya di sini.")
+                # Tombol ini hanya dummy info, user harus klik sidebar
+                st.info("👈 Klik menu 'Konsultasi' di kiri untuk mulai.")
+
         with col2:
-            st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-            st.markdown("### 📚 Cek Ensiklopedia")
-            st.write("Cari informasi hama dan penyakit umum di database kami.")
-            st.button("Buka Pustaka", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        with col3:
-             st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-             st.markdown("### ⚙️ Atur Suara AI")
-             st.write("Aktifkan atau matikan fitur respon suara (Text-to-Speech).")
-             st.button("Ke Pengaturan", use_container_width=True)
-             st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.subheader("📚 Kamus Hama")
+                st.write("Cari info wereng, ulat, dan penyakit umum.")
+                st.info("👈 Klik menu 'Ensiklopedia' di kiri.")
 
-    # ================= HALAMAN 2: KONSULTASI AI (INTI) =================
-    elif selected_menu == "Konsultasi AI":
-        st.markdown('<div class="page-title">🤖 Dokter Tanaman AI</div>', unsafe_allow_html=True)
-        st.caption("Upload foto daun yang sakit atau ketik pertanyaan Anda di bawah.")
+    # --- KONTEN KONSULTASI (INTI APLIKASI) ---
+    elif selected == "Konsultasi":
+        st.title("🤖 Dokter Tanaman")
+        st.caption("Upload foto daun atau ketik keluhan Anda.")
 
-        # Container Chat History agar rapi
-        chat_container = st.container()
-        with chat_container:
-             if "history" not in st.session_state: st.session_state.history = []
-             for chat in st.session_state.history:
-                 with st.chat_message(chat["role"]):
-                     st.markdown(chat["content"])
-                     if "audio" in chat: st.audio(chat["audio"], format="audio/mp3")
+        # Area Chat (Scrollable)
+        chat_box = st.container(height=400, border=True)
+        with chat_box:
+            if "history" not in st.session_state: st.session_state.history = []
+            for chat in st.session_state.history:
+                with st.chat_message(chat["role"]):
+                    st.markdown(chat["content"])
+                    if "audio" in chat: st.audio(chat["audio"])
 
-        st.write("") # Spacer
+        # Area Input (Di Bawah)
+        with st.container(border=True):
+            col_up, col_in = st.columns([1, 4])
+            with col_up:
+                upl = st.file_uploader("📷 Foto", type=["jpg","png"], label_visibility="collapsed")
+            with col_in:
+                txt = st.chat_input("Tulis keluhan tanaman...")
+            
+            if upl: st.image(upl, width=100, caption="Siap kirim")
 
-        # Area Input yang Lebih Bersih (Di dalam Card)
-        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-        col_img, col_input = st.columns([1, 3])
-        
-        with col_img:
-            uploaded_file = st.file_uploader("📸 Upload Foto", type=["jpg","png"], label_visibility="collapsed")
-            if uploaded_file:
-                st.image(uploaded_file, caption="Preview", width=150)
-            else:
-                # Placeholder image kalau belum upload
-                st.image("https://cdn-icons-png.flaticon.com/512/1635/1635678.png", width=100, caption="Belum ada foto")
-
-        with col_input:
-            st.write("⬇️ **Ketik keluhan Anda di sini:**")
-            user_input = st.chat_input("Contoh: Daun padi saya menguning dan ada bercak...")
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Logika Pemrosesan
-        if user_input:
-            with chat_container: # Tampilkan chat baru di container atas
+        # Logika AI
+        if txt:
+            # Update Tampilan User
+            with chat_box:
                 with st.chat_message("user"):
-                    st.write(user_input)
-                    if uploaded_file: st.image(uploaded_file, width=250)
-                st.session_state.history.append({"role": "user", "content": user_input})
+                    st.write(txt)
+                    if upl: st.image(upl, width=200)
+            st.session_state.history.append({"role":"user", "content":txt})
 
-                with st.spinner("Sedang mendiagnosa..."):
-                    try:
-                        model = genai.GenerativeModel("gemini-flash-latest")
-                        content = [user_input]
-                        prompt_sys = "Jawablah sebagai ahli pertanian profesional secara ringkas. "
-                        if uploaded_file:
-                            img = PIL.Image.open(uploaded_file)
-                            content.append(img)
-                            prompt_sys += "Analisa gambar ini secara visual. "
-                        content[0] = prompt_sys + content[0]
+            # Proses AI
+            with st.spinner("Sedang meneliti..."):
+                try:
+                    model = genai.GenerativeModel("gemini-flash-latest")
+                    content = [txt]
+                    prompt = "Kamu ahli tani. Jawab ringkas dan jelas. "
+                    if upl:
+                        img = PIL.Image.open(upl)
+                        content.append(img)
+                        prompt += "Analisa gambar ini. "
+                    content[0] = prompt + content[0]
 
-                        response = model.generate_content(content)
-                        ai_text = response.text
-                        audio_path = text_to_speech(ai_text)
+                    resp = model.generate_content(content)
+                    ai_txt = resp.text
+                    audio = text_to_speech(ai_txt)
 
+                    # Tampilkan Jawaban
+                    with chat_box:
                         with st.chat_message("assistant"):
-                            st.markdown(ai_text)
-                            if audio_path: st.audio(audio_path, format="audio/mp3")
-                        
-                        msg = {"role": "assistant", "content": ai_text}
-                        if audio_path: msg["audio"] = audio_path
-                        st.session_state.history.append(msg)
-                    except Exception as e:
-                        st.error(f"Error koneksi: {e}")
+                            st.markdown(ai_txt)
+                            if audio: st.audio(audio)
+                    
+                    msg = {"role":"assistant", "content":ai_txt}
+                    if audio: msg["audio"] = audio
+                    st.session_state.history.append(msg)
+                except Exception as e:
+                    st.error("Gagal koneksi AI. Coba lagi.")
 
-    # ================= HALAMAN 3: ENSIKLOPEDIA (FITUR BARU) =================
-    elif selected_menu == "Ensiklopedia Tani":
-        st.markdown('<div class="page-title">📚 Pustaka Hama & Penyakit</div>', unsafe_allow_html=True)
-        st.write("Informasi dasar seputar masalah umum pada tanaman utama.")
-        
-        # Menggunakan Expander untuk tampilan minimalis
-        with st.expander("🌾 Hama Wereng Coklat (Pada Padi)"):
-             st.markdown("""
-             **Gejala:** Tanaman menguning, kering seperti terbakar (hopperburn).
-             **Penyebab:** Serangga *Nilaparvata lugens*.
-             **Pengendalian:** Gunakan varietas tahan, atur jarak tanam, musuh alami (laba-laba), insektisida berbahan aktif imidakloprid (jika parah).
-             """)
-        
-        with st.expander("🌶️ Penyakit Antraknosa/Patek (Pada Cabai)"):
-             st.markdown("""
-             **Gejala:** Bercak melingkar cekung pada buah, berwarna coklat/hitam.
-             **Penyebab:** Jamur *Colletotrichum spp*.
-             **Pengendalian:** Buang buah yang sakit, perbaiki drainase agar tidak lembab, fungisida kontak (mankozeb) atau sistemik (difenokonazol).
-             """)
-        
-        with st.expander("🌽 Ulat Grayak (Pada Jagung)"):
-             st.markdown("""
-             **Gejala:** Daun berlubang-lubang tidak beraturan, terdapat kotoran ulat.
-             **Penyebab:** Larva *Spodoptera frugiperda*.
-             **Pengendalian:** Pengumpulan telur/ulat secara manual, pemasangan perangkap feromon, penyemprotan insektisida di pucuk tanaman.
-             """)
-        st.caption("Catatan: Ini adalah data statis untuk contoh. Gunakan 'Konsultasi AI' untuk diagnosa real-time.")
+    # --- KONTEN ENSIKLOPEDIA ---
+    elif selected == "Ensiklopedia":
+        st.title("📚 Ensiklopedia Tani")
+        with st.expander("🌾 Hama Wereng Coklat (Padi)"):
+            st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Nilaparvata_lugens_01.jpg/320px-Nilaparvata_lugens_01.jpg")
+            st.write("Menyebabkan padi kering terbakar. Obat: Imidakloprid.")
+        with st.expander("🌶️ Penyakit Patek (Cabai)"):
+            st.write("Jamur Colletotrichum. Buah jadi busuk hitam. Obat: Fungisida.")
 
-    # ================= HALAMAN 4: PENGATURAN (FITUR BARU) =================
-    elif selected_menu == "Pengaturan":
-        st.markdown('<div class="page-title">⚙️ Pengaturan Aplikasi</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-        st.subheader("Aksesibilitas")
-        # Toggle Switch untuk Suara
-        tts_toggle = st.toggle("Aktifkan Respon Suara AI (Text-to-Speech)", value=st.session_state['enable_tts'])
-        
-        if tts_toggle:
-            st.session_state['enable_tts'] = True
-            st.success("✅ Fitur suara aktif. AI akan membacakan jawabannya.")
-        else:
-            st.session_state['enable_tts'] = False
-            st.info("ℹ️ Fitur suara nonaktif. Jawaban hanya berupa teks.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ================= HALAMAN 5: LOGOUT =================
-    elif selected_menu == "Logout":
+    # --- LOGOUT ---
+    elif selected == "Logout":
         st.session_state['is_logged_in'] = False
         st.rerun()
 
-# --- 6. MAIN CONTROL FLOW ---
+# --- 6. MAIN ---
 if __name__ == "__main__":
-    if 'is_logged_in' not in st.session_state:
-        st.session_state['is_logged_in'] = False
-
+    if 'is_logged_in' not in st.session_state: st.session_state['is_logged_in'] = False
+    
     if st.session_state['is_logged_in']:
         dashboard_page()
     else:
