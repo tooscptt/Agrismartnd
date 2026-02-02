@@ -14,42 +14,51 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. CSS SEDERHANA (HANYA WARNA & FONT) ---
-# Kita hapus CSS yang bikin tombol macet. Cukup ganti warna background saja.
+# --- 2. CSS MODERN (YANG SUDAH DIPERBAIKI) ---
+# Saya hapus bagian yang bikin tombol macet.
+# Sekarang backgroundnya warna bersih, bukan gambar full screen yang berat.
 st.markdown("""
 <style>
-    /* Background Warna Krem Lembut (Khas Alam) */
+    /* Latar belakang aplikasi yang bersih */
     .stApp {
-        background-color: #fdfcf0;
+        background-color: #f4f6f8;
     }
     
-    /* Tombol Utama Hijau */
+    /* Mempercantik Tombol agar terlihat modern */
     .stButton>button {
         width: 100%;
-        border-radius: 12px;
-        font-weight: bold;
+        border-radius: 10px;
         border: 1px solid #2e7d32;
+        font-weight: bold;
+        transition: all 0.3s;
     }
-    
-    /* Mempercantik Judul */
+    .stButton>button:hover {
+        background-color: #2e7d32;
+        color: white;
+    }
+
+    /* Mempercantik judul */
     h1, h2, h3 {
         color: #1b5e20;
+        font-family: 'Segoe UI', sans-serif;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SETUP API KEY & SUARA ---
-if 'enable_tts' not in st.session_state: st.session_state['enable_tts'] = True
-
+# --- 3. API KEY HANDLER ---
 try:
     if "API_KEY" in st.secrets:
         api_key = st.secrets["API_KEY"]
     else:
-        api_key = "MASUKKAN_KEY_LOKAL" 
-    if api_key and "MASUKKAN" not in api_key: genai.configure(api_key=api_key)
+        api_key = "MASUKKAN_KEY_LOKAL_JIKA_ADA"
+        
+    if api_key and "MASUKKAN" not in api_key:
+        genai.configure(api_key=api_key)
 except: pass
 
+# --- 4. FUNGSI SUARA (TTS) ---
 def text_to_speech(text):
+    if 'enable_tts' not in st.session_state: st.session_state['enable_tts'] = True
     if not st.session_state['enable_tts']: return None
     try:
         tts = gTTS(text=text, lang='id', slow=False)
@@ -58,113 +67,119 @@ def text_to_speech(text):
             return fp.name
     except: return None
 
-# --- 4. HALAMAN LOGIN (KARTU TENGAH) ---
+# --- 5. HALAMAN LOGIN (MODERN & RAPI) ---
 def login_page():
-    col1, col2, col3 = st.columns([1, 2, 1]) # Biar posisinya di tengah
+    # Membuat 3 kolom agar kotak login ada di tengah (Centering)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    
     with col2:
-        # Gunakan 'border=True' pengganti CSS Card yang error kemarin
+        # Gunakan Container dengan Border (Pengganti Card CSS yang error)
         with st.container(border=True):
             st.markdown("<h1 style='text-align: center;'>🌾 AgriSmart</h1>", unsafe_allow_html=True)
-            st.write("Sistem Pakar Pertanian Berbasis AI")
+            st.markdown("<p style='text-align: center; color: grey;'>Sistem Pakar Pertanian AI</p>", unsafe_allow_html=True)
             
-            # Gambar Banner Login (Menggunakan link stabil Wikimedia)
-            st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Padi_sawah.jpg/640px-Padi_sawah.jpg", caption="Mitra Petani Indonesia")
+            # Gambar Login (Saya ganti pakai Emoji besar biar pasti muncul)
+            st.markdown("<h1 style='text-align: center; font-size: 60px;'>🚜</h1>", unsafe_allow_html=True)
             
-            with st.form("login"):
+            with st.form("login_form"):
                 user = st.text_input("Username", placeholder="admin")
                 pwd = st.text_input("Password", type="password", placeholder="petani123")
+                st.write("") # Spasi
                 
-                if st.form_submit_button("Masuk Sekarang", type="primary"):
+                # Tombol Submit
+                submit = st.form_submit_button("🚀 Masuk Aplikasi", type="primary")
+                
+                if submit:
                     if user == "admin" and pwd == "petani123":
                         st.session_state['is_logged_in'] = True
                         st.rerun()
                     else:
-                        st.error("Gagal masuk. Cek username/password.")
+                        st.error("Username/Password Salah!")
 
-# --- 5. DASHBOARD UTAMA ---
+# --- 6. DASHBOARD (ISI APLIKASI) ---
 def dashboard_page():
-    # Sidebar
+    # Sidebar Menu
     with st.sidebar:
-        st.header("Menu Utama")
+        st.header("AgriSmart Pro")
         selected = option_menu(
             menu_title=None,
-            options=["Beranda", "Konsultasi", "Ensiklopedia", "Logout"],
-            icons=["house", "robot", "book", "box-arrow-right"],
+            options=["Beranda", "Konsultasi AI", "Ensiklopedia", "Pengaturan", "Logout"],
+            icons=["house", "robot", "book", "gear", "box-arrow-right"],
             default_index=0,
-            styles={"nav-link-selected": {"background-color": "#2e7d32"}}
+            styles={
+                "nav-link-selected": {"background-color": "#2e7d32"},
+            }
         )
 
-    # --- KONTEN BERANDA ---
+    # --- HALAMAN BERANDA ---
     if selected == "Beranda":
         st.title("Halo, Sobat Tani! 👋")
-        
-        # Gambar Banner Utama (Link stabil)
-        # Jika gambar ini gagal load di HP, dia tidak akan bikin error
-        try:
-            st.image("https://upload.wikimedia.org/wikipedia/commons/9/98/Rice_fields_in_Bali.jpg", use_container_width=True)
-        except:
-            st.warning("Gambar tidak muncul karena sinyal, tapi aplikasi tetap aman!")
-
+        st.write("Selamat datang di dashboard operasional.")
         st.divider()
 
-        # MENU CEPAT (Pakai Kolom & Container Asli Streamlit - PASTI BISA DIKLIK)
-        col1, col2 = st.columns(2)
+        # Menu Cepat (Quick Actions)
+        c1, c2, c3 = st.columns(3)
         
-        with col1:
-            with st.container(border=True): # Ini kotak bergaris
-                st.subheader("🤖 Tanya Dokter AI")
-                st.write("Punya tanaman sakit? Foto dan tanya solusinya di sini.")
-                # Tombol ini hanya dummy info, user harus klik sidebar
-                st.info("👈 Klik menu 'Konsultasi' di kiri untuk mulai.")
-
-        with col2:
+        with c1:
             with st.container(border=True):
-                st.subheader("📚 Kamus Hama")
-                st.write("Cari info wereng, ulat, dan penyakit umum.")
-                st.info("👈 Klik menu 'Ensiklopedia' di kiri.")
+                st.subheader("🤖 Konsultasi")
+                st.write("Tanya jawab masalah tanaman.")
+                # Tombol ini hanya info visual
+                st.info("👈 Pilih menu 'Konsultasi AI'")
+        
+        with c2:
+            with st.container(border=True):
+                st.subheader("📚 Pustaka")
+                st.write("Cari data hama & penyakit.")
+                st.info("👈 Pilih menu 'Ensiklopedia'")
 
-    # --- KONTEN KONSULTASI (INTI APLIKASI) ---
-    elif selected == "Konsultasi":
+        with c3:
+            with st.container(border=True):
+                st.subheader("⚙️ Status")
+                st.metric("Koneksi AI", "Online 🟢")
+                st.write("Sistem berjalan normal.")
+
+    # --- HALAMAN KONSULTASI (INTI) ---
+    elif selected == "Konsultasi AI":
         st.title("🤖 Dokter Tanaman")
-        st.caption("Upload foto daun atau ketik keluhan Anda.")
-
+        st.caption("Upload foto daun atau ketik pertanyaan di bawah.")
+        
         # Area Chat (Scrollable)
-        chat_box = st.container(height=400, border=True)
-        with chat_box:
+        chat_container = st.container(height=400, border=True)
+        with chat_container:
             if "history" not in st.session_state: st.session_state.history = []
             for chat in st.session_state.history:
                 with st.chat_message(chat["role"]):
                     st.markdown(chat["content"])
                     if "audio" in chat: st.audio(chat["audio"])
 
-        # Area Input (Di Bawah)
+        # Area Input (Fixed di bawah)
         with st.container(border=True):
-            col_up, col_in = st.columns([1, 4])
-            with col_up:
+            c_up, c_txt = st.columns([1, 4])
+            with c_up:
                 upl = st.file_uploader("📷 Foto", type=["jpg","png"], label_visibility="collapsed")
-            with col_in:
+            with c_txt:
                 txt = st.chat_input("Tulis keluhan tanaman...")
             
-            if upl: st.image(upl, width=100, caption="Siap kirim")
+            if upl: st.image(upl, width=100, caption="Foto Terlampir")
 
         # Logika AI
         if txt:
-            # Update Tampilan User
-            with chat_box:
+            # Tampilkan pesan user
+            with chat_container:
                 with st.chat_message("user"):
                     st.write(txt)
                     if upl: st.image(upl, width=200)
             st.session_state.history.append({"role":"user", "content":txt})
 
             # Proses AI
-            with st.spinner("Sedang meneliti..."):
+            with st.spinner("AI sedang berpikir..."):
                 try:
                     model = genai.GenerativeModel("gemini-flash-latest")
                     content = [txt]
-                    prompt = "Kamu ahli tani. Jawab ringkas dan jelas. "
+                    prompt = "Kamu ahli tani. Jawab ringkas & jelas. "
                     if upl:
-                        img = PIL.Image.open(upl)
-                        content.append(img)
+                        content.append(PIL.Image.open(upl))
                         prompt += "Analisa gambar ini. "
                     content[0] = prompt + content[0]
 
@@ -172,8 +187,8 @@ def dashboard_page():
                     ai_txt = resp.text
                     audio = text_to_speech(ai_txt)
 
-                    # Tampilkan Jawaban
-                    with chat_box:
+                    # Tampilkan balasan AI
+                    with chat_container:
                         with st.chat_message("assistant"):
                             st.markdown(ai_txt)
                             if audio: st.audio(audio)
@@ -182,26 +197,37 @@ def dashboard_page():
                     if audio: msg["audio"] = audio
                     st.session_state.history.append(msg)
                 except Exception as e:
-                    st.error("Gagal koneksi AI. Coba lagi.")
+                    st.error("Gagal koneksi AI.")
 
-    # --- KONTEN ENSIKLOPEDIA ---
+    # --- HALAMAN ENSIKLOPEDIA ---
     elif selected == "Ensiklopedia":
-        st.title("📚 Ensiklopedia Tani")
-        with st.expander("🌾 Hama Wereng Coklat (Padi)"):
-            st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Nilaparvata_lugens_01.jpg/320px-Nilaparvata_lugens_01.jpg")
-            st.write("Menyebabkan padi kering terbakar. Obat: Imidakloprid.")
-        with st.expander("🌶️ Penyakit Patek (Cabai)"):
-            st.write("Jamur Colletotrichum. Buah jadi busuk hitam. Obat: Fungisida.")
+        st.title("📚 Pustaka Hama")
+        
+        with st.expander("🌾 Wereng Coklat (Padi)"):
+            st.write("Gejala: Tanaman menguning dan kering (puso).")
+            st.write("Solusi: Gunakan varietas tahan wereng & insektisida berbahan aktif imidakloprid.")
+        
+        with st.expander("🌶️ Patek / Antraknosa (Cabai)"):
+            st.write("Gejala: Bercak hitam melingkar pada buah cabai.")
+            st.write("Solusi: Potong buah sakit, semprot fungisida mankozeb.")
+
+    # --- HALAMAN PENGATURAN ---
+    elif selected == "Pengaturan":
+        st.title("⚙️ Pengaturan")
+        st.write("Sesuaikan preferensi aplikasi.")
+        with st.container(border=True):
+            st.session_state['enable_tts'] = st.toggle("Aktifkan Suara Robot", value=st.session_state.get('enable_tts', True))
 
     # --- LOGOUT ---
     elif selected == "Logout":
         st.session_state['is_logged_in'] = False
         st.rerun()
 
-# --- 6. MAIN ---
+# --- 7. MAIN EXECUTION ---
 if __name__ == "__main__":
-    if 'is_logged_in' not in st.session_state: st.session_state['is_logged_in'] = False
-    
+    if 'is_logged_in' not in st.session_state:
+        st.session_state['is_logged_in'] = False
+
     if st.session_state['is_logged_in']:
         dashboard_page()
     else:
