@@ -1,0 +1,5 @@
+streamlit
+google-generativeai
+Pillow
+streamlit-option-menu
+gTTS
