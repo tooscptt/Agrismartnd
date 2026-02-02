@@ -1,187 +1,215 @@
 import streamlit as st
 import google.generativeai as genai
 import PIL.Image
-from streamlit_option_menu import option_menu # Library menu cantik
-from gtts import gTTS # Library suara
-import tempfile # Untuk simpan file suara sementara
+from streamlit_option_menu import option_menu
+from gtts import gTTS
+import tempfile
+import os
 
-# --- KONFIGURASI HALAMAN ---
+# --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(
     page_title="AgriSmart Pro",
     page_icon="🌱",
-    layout="wide", # Tampilan lebar (Widescreen) agar lebih lega
-    initial_sidebar_state="expanded"
+    layout="wide",
+    initial_sidebar_state="collapsed" # Sidebar tertutup saat login
 )
 
-# --- CUSTOM CSS (Agar Tampilan Lebih Elegan) ---
+# --- 2. CSS MODERN (TAMPILAN) ---
 st.markdown("""
 <style>
-    /* Menyembunyikan footer Streamlit default */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .stApp {background-color: #f0f2f6;}
     
-    /* Mengubah font agar lebih modern */
-    .stApp {
-        background-color: #f5f7f9;
+    /* Style Kartu Login */
+    div[data-testid="stForm"] {
+        background-color: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
     }
     
-    /* Style untuk chat bubble user */
-    .stChatMessage[data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #e8f5e9;
-        border-radius: 10px;
+    /* Chat Bubble */
+    .stChatMessage {
+        background-color: white;
+        border-radius: 15px;
+        padding: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- KEAMANAN API KEY ---
+# --- 3. API KEY HANDLER ---
 try:
     if "API_KEY" in st.secrets:
         api_key = st.secrets["API_KEY"]
     else:
-        api_key = "MASUKKAN_KEY_KALAU_DI_LOCALHOST" # Ganti kalau testing lokal
-        if api_key == "MASUKKAN_KEY_KALAU_DI_LOCALHOST":
-            st.warning("⚠️ Menggunakan mode Demo tanpa API Key")
-            st.stop()
+        # Fallback lokal
+        api_key = "MASUKKAN_KEY_MANUAL_DISINI_JIKA_LOKAL" 
+        
+    if not api_key or "MASUKKAN" in api_key:
+        # Jika key kosong/salah, jangan error merah, tapi info sopan
+        pass 
+    else:
+        genai.configure(api_key=api_key)
 except:
-    st.error("Konfigurasi Secrets belum diatur.")
-    st.stop()
+    st.warning("⚠️ API Key belum dikonfigurasi.")
 
-genai.configure(api_key=api_key)
-
-# --- FUNGSI TEXT-TO-SPEECH (SUARA) ---
+# --- 4. FUNGSI SUARA (TTS) ---
 def text_to_speech(text):
     try:
-        # Buat suara bahasa Indonesia ('id')
         tts = gTTS(text=text, lang='id', slow=False)
-        
-        # Simpan ke file sementara
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
             tts.save(fp.name)
             return fp.name
-    except Exception as e:
+    except:
         return None
 
-# --- MAIN APPLICATION ---
-def main():
-    # --- SIDEBAR MENU MODERN ---
+# --- 5. HALAMAN LOGIN (MODERN CARD) ---
+def login_page():
+    # Bikin kolom kosong kiri-kanan biar form ada di tengah (Centering)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("<h1 style='text-align: center; color: #2e7d32;'>🌾 AgriSmart Pro</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'>Sistem Pakar Pertanian Berbasis AI</p>", unsafe_allow_html=True)
+        st.write("") # Spacer
+
+        # Form Login
+        with st.form("login_form"):
+            st.subheader("Login Akses")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Masuk Sistem", use_container_width=True)
+            
+            if submitted:
+                if username == "admin" and password == "petani123":
+                    st.session_state['is_logged_in'] = True
+                    st.rerun()
+                else:
+                    st.error("Username atau Password salah!")
+
+# --- 6. DASHBOARD UTAMA (SETELAH LOGIN) ---
+def dashboard_page():
+    # Sidebar hanya muncul setelah login
     with st.sidebar:
-        st.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=100) # Logo Petani dummy
-        st.title("AgriSmart Pro")
+        st.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=80)
         
-        # Menu Navigasi dengan Icon
         selected = option_menu(
-            menu_title="Menu Utama",
-            options=["Konsultasi AI", "Tentang Aplikasi", "Logout"],
-            icons=["chat-dots-fill", "info-circle", "box-arrow-right"],
-            menu_icon="cast",
+            menu_title="Navigasi",
+            options=["Konsultasi AI", "Panduan", "Logout"],
+            icons=["robot", "book", "box-arrow-right"],
+            menu_icon="list",
             default_index=0,
             styles={
-                "nav-link-selected": {"background-color": "#2e7d32"}, # Warna Hijau Petani
+                "nav-link-selected": {"background-color": "#2e7d32"},
             }
         )
 
-    # --- HALAMAN 1: KONSULTASI AI ---
+    # --- LOGIKA HALAMAN ---
+    
+    # A. HALAMAN KONSULTASI
     if selected == "Konsultasi AI":
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.markdown("### 🤖 Asisten Cerdas Pertanian")
-            st.caption("Diagnosa penyakit tanaman & solusi budidaya dengan teknologi Computer Vision.")
-        with col2:
-            # Tombol Clear History
-            if st.button("Hapus Riwayat Chat", type="primary"):
-                st.session_state.history_chat = []
-                st.rerun()
+        st.title("🤖 Konsultasi Dokter Tanaman")
+        st.caption("Silakan tanya atau upload foto daun yang sakit.")
+        st.divider()
 
-        # Inisialisasi History
-        if "history_chat" not in st.session_state:
-            st.session_state.history_chat = []
+        # History Chat
+        if "history" not in st.session_state:
+            st.session_state.history = []
 
-        # Tampilkan History
-        for chat in st.session_state.history_chat:
+        # Tampilkan Chat
+        for chat in st.session_state.history:
             with st.chat_message(chat["role"]):
                 st.markdown(chat["content"])
-                # Jika ada audio di history, tampilkan player
                 if "audio" in chat:
                     st.audio(chat["audio"], format="audio/mp3")
 
-        # --- AREA INPUT ---
+        # Area Input (Fixed di bawah)
         with st.container():
-            # Fitur Upload Foto (Dibuat lebih compact)
-            uploaded_file = st.file_uploader("📸 Upload Foto Tanaman (Opsional)", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+            col_upload, col_text = st.columns([1, 4])
+            with col_upload:
+                # Tombol upload kecil
+                uploaded_file = st.file_uploader("📸 Foto", type=["jpg","png"], label_visibility="collapsed")
             
-            if uploaded_file:
-                st.image(uploaded_file, caption="Foto Terlampir", width=200)
+            with col_text:
+                user_input = st.chat_input("Tulis keluhan tanaman...")
 
-            # Input Text
-            user_input = st.chat_input("Ketik keluhan tanaman Anda di sini...")
+        # Preview Gambar jika ada
+        if uploaded_file:
+            st.image(uploaded_file, caption="Foto akan dikirim...", width=150)
 
-            if user_input:
-                # 1. Tampilkan User Input
-                with st.chat_message("user"):
-                    st.write(user_input)
+        # Proses Logika AI
+        if user_input:
+            # Tampilkan user input
+            with st.chat_message("user"):
+                st.write(user_input)
+                if uploaded_file:
+                    st.image(uploaded_file, width=200)
+            
+            st.session_state.history.append({"role": "user", "content": user_input})
+
+            # AI Processing
+            with st.spinner("Sedang menganalisa & memproses suara..."):
+                try:
+                    model = genai.GenerativeModel("gemini-flash-latest")
+                    
+                    # Siapkan konten
+                    content = [user_input]
+                    prompt_add = "Jawablah sebagai ahli pertanian yang ramah. Ringkas saja. "
+                    
                     if uploaded_file:
-                        st.image(uploaded_file, width=200)
-                
-                st.session_state.history_chat.append({"role": "user", "content": user_input})
+                        img = PIL.Image.open(uploaded_file)
+                        content.append(img)
+                        prompt_add += "Analisa gambar ini. "
+                    
+                    # Modifikasi prompt sistem lewat text input
+                    content[0] = prompt_add + content[0]
 
-                # 2. Proses AI
-                model = genai.GenerativeModel("gemini-flash-latest")
-                
-                with st.spinner("🔄 Sedang menganalisa & membuat suara..."):
-                    try:
-                        final_input = [user_input]
-                        system_prompt = "Kamu adalah pakar pertanian ramah. Jawab ringkas maksimal 3 paragraf. "
-                        
-                        if uploaded_file:
-                            img = PIL.Image.open(uploaded_file)
-                            final_input.append(img)
-                            system_prompt += "Analisa gambar ini. "
-                        
-                        # Gabung prompt (trik biar nurut)
-                        final_input[0] = system_prompt + final_input[0]
+                    response = model.generate_content(content)
+                    ai_text = response.text
+                    
+                    # Bikin Suara
+                    audio_path = text_to_speech(ai_text)
 
-                        response = model.generate_content(final_input)
-                        ai_reply = response.text
-                        
-                        # Generate Suara (Fitur Modern)
-                        audio_file = text_to_speech(ai_reply)
+                    # Tampilkan Balasan
+                    with st.chat_message("assistant"):
+                        st.markdown(ai_text)
+                        if audio_path:
+                            st.audio(audio_path, format="audio/mp3")
+                    
+                    # Simpan ke history
+                    msg = {"role": "assistant", "content": ai_text}
+                    if audio_path: msg["audio"] = audio_path
+                    st.session_state.history.append(msg)
 
-                        # 3. Tampilkan Jawaban AI
-                        with st.chat_message("assistant"):
-                            st.markdown(ai_reply)
-                            if audio_file:
-                                st.audio(audio_file, format="audio/mp3", start_time=0)
-                        
-                        # Simpan ke history
-                        msg_data = {"role": "assistant", "content": ai_reply}
-                        if audio_file:
-                            msg_data["audio"] = audio_file
-                        
-                        st.session_state.history_chat.append(msg_data)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-
-    # --- HALAMAN 2: TENTANG ---
-    if selected == "Tentang Aplikasi":
-        st.title("Tentang AgriSmart")
-        st.info("Aplikasi ini dibuat sebagai Tugas Akhir Teknik Informatika.")
+    # B. HALAMAN PANDUAN
+    elif selected == "Panduan":
+        st.title("📖 Panduan Penggunaan")
+        st.info("Aplikasi ini menggunakan Gemini 2.0 Flash Latest.")
         st.markdown("""
-        **Fitur Unggulan:**
-        - 🧠 **Gemini AI 2.0 Flash:** Model AI terbaru yang cepat.
-        - 👁️ **Computer Vision:** Mampu mendiagnosa penyakit dari foto daun.
-        - 🗣️ **Voice Feedback:** Ramah disabilitas dengan fitur suara.
-        - 📱 **Responsive:** Cocok dibuka di HP maupun Laptop.
+        1. **Login** menggunakan akun admin.
+        2. Masuk ke menu **Konsultasi AI**.
+        3. Klik ikon 📸 untuk upload foto daun (opsional).
+        4. Ketik pertanyaan dan kirim.
+        5. Dengarkan jawaban AI lewat speaker.
         """)
-        st.balloons() # Efek animasi balon
 
-    # --- HALAMAN 3: LOGOUT ---
-    if selected == "Logout":
-        st.warning("Apakah anda yakin ingin keluar?")
-        if st.button("Ya, Keluar"):
-            st.success("Berhasil Logout")
-            st.stop()
+    # C. LOGOUT
+    elif selected == "Logout":
+        st.session_state['is_logged_in'] = False
+        st.rerun()
 
+# --- 7. MAIN CONTROL FLOW ---
 if __name__ == "__main__":
-    main()
+    # Cek status login
+    if 'is_logged_in' not in st.session_state:
+        st.session_state['is_logged_in'] = False
+
+    # Tentukan halaman mana yang muncul
+    if st.session_state['is_logged_in']:
+        dashboard_page() # Masuk Dashboard
+    else:
+        login_page()     # Tampilkan Login
